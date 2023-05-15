@@ -13,9 +13,9 @@ SCR_model <- nimbleCode({
 	
 	for( i in 1:nmask ) {
 		Hazk[i] <-  sum(lambda*Time*exp(-d2mask[i,1:J]*tau2))
-		pDetect[i] <- (1-exp(-Hazk[i]))*A
+		pDetect[i] <- (1-exp(-Hazk[i])
 	}
-	ESA <- sum(pDetect[1:nmask])
+	ESA <- sum(pDetect[1:nmask]))*A
 	logESA <- log(ESA)
 	
     for(k in 1:K0) {
@@ -51,10 +51,11 @@ simSCR <- function(N = 50, sigma = 0.5, lambda = 0.5, StudyPeriod = 25, traps, x
 	as.matrix(capthist)
 }
 
+## Start with an easy problem.
 traps <- expand.grid(x = 1:5,y = 1:5)
 N <- 50
-sigma <- 0.5
-lambda <- 0.25
+sigma <- 1.5
+lambda <- 0.4
 StudyPeriod <- 25
 xlim <- range(traps[,1]) + c(-3, 3)
 ylim <- range(traps[,2]) + c(-3, 3)
@@ -64,6 +65,7 @@ J <- nrow(traps)
 A <- 0.25^2
 area <- nrow(mask) * A
 d2mask <- as.matrix(t(apply(mask, 1, FUN = function(x){(x[1]-traps[,1])^2 + (x[2]-traps[,2])^2})))
+
 y  <- simSCR(N, sigma, lambda, StudyPeriod, traps, xlim, ylim)
 
 K <- nrow(y)
@@ -75,4 +77,14 @@ Rmodel <- nimbleModel(SCR_model, data=data, constants=constants, inits = inits, 
 Cmodel <- compileNimble(Rmodel)
 scr_laplace <-  buildLaplace(Rmodel, paramNodes = c('sigma', 'lambda'), randomEffectsNodes = 'X')
 Cscr_laplace <- compileNimble(scr_laplace, project = Rmodel)
-Cscr_laplace$findMLE()
+mle <- Cscr_laplace$findMLE()
+
+## HT-like estimator for Density:
+Cmodel[['sigma']] <- mle$par[1]
+Cmodel[['lambda']] <- mle$par[2]
+Cmodel$calculate()
+Dhat <- K/Cmodel$ESA 	# Density Estimate
+Nhat <- Dhat*area
+
+logESA <- getLogESA(sigma = mle$par[1], lambda = mle$par[2], d2mask[1:nmask, 1:J], nmask, J, StudyPeriod, A)
+exp(getLogESA(sigma = sigma, lambda = lambda, d2mask[1:nmask, 1:J], nmask, J, StudyPeriod, A))/area
