@@ -85,6 +85,3 @@ Cmodel[['lambda']] <- mle$par[2]
 Cmodel$calculate()
 Dhat <- K/Cmodel$ESA 	# Density Estimate
 Nhat <- Dhat*area
-
-logESA <- getLogESA(sigma = mle$par[1], lambda = mle$par[2], d2mask[1:nmask, 1:J], nmask, J, StudyPeriod, A)
-exp(getLogESA(sigma = sigma, lambda = lambda, d2mask[1:nmask, 1:J], nmask, J, StudyPeriod, A))/area
