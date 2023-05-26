@@ -86,9 +86,9 @@ y  <- simSCR(N, sigma, lambda, StudyPeriod, traps, xlim, ylim)
 
 K <- nrow(y)
 data <- list(y = y, zeros = rep(0, K))	#, K I added it as data instead of the prior and that allows me to change it but not influence the Log Likelihood.
-constants <- list(traps = traps, d2mask = d2mask, J = nrow(traps), nmask = nrow(mask), 
+constants <- list(traps = traps, d2mask = d2mask, J = as.integer(nrow(traps)), nmask = as.integer(nrow(mask)), 
 	A = A, area = area, K0 = nrow(y), Time = StudyPeriod)
-inits <- list(sigma = 0.5, lambda = 1) ##D = 50,  add D back when I get the function working.
+inits <- list(sigma = 0.5, lambda = 1) ##D = 50,  add D back when I get the dist function working.
 Rmodel <- nimbleModel(SCR_model, data=data, constants=constants, inits = inits, buildDerivs = TRUE)
 ## ** Won't compile here.
 Cmodel <- compileNimble(Rmodel)
