@@ -2,21 +2,27 @@
 library(nimble)
 nimbleOptions(buildModelDerivs = TRUE)
 
+source("functions.r")
+
 ## Conditional SCR model
 SCR_model <- nimbleCode({
 	lambda ~ dgamma(1, 1) # Detection rate at distance 0
     sigma ~ dgamma(1, 1)	# Now the prior is directly on sigma to be consistent with literature.
     tau2 <- 1/(2*sigma^2)
 	# D ~ dgamma(1, 1)
+	D <- K0/exp(logESA)
 
-	# logESA <- getLogESA(sigma = sigma, lambda = lambda, d2mask[1:nmask, 1:J], nmask, J, Time, A)
+	## Doesn't Work
+	logESA <- getLogESA(sigma = sigma, lambda = lambda, d2mask = d2mask[1:nmask, 1:J], nmask = nmask, 
+		ntrap = J, Time = Time, area = A)
 	
-	for( i in 1:nmask ) {
-		Hazk[i] <-  sum(lambda*Time*exp(-d2mask[i,1:J]*tau2))
-		pDetect[i] <- (1-exp(-Hazk[i])
-	}
-	ESA <- sum(pDetect[1:nmask]))*A
-	logESA <- log(ESA)
+	## Does work but kind of sloppy feeling.
+	# for( i in 1:nmask ) {
+		# Hazk[i] <-  sum(lambda*Time*exp(-d2mask[i,1:J]*tau2))
+		# pDetect[i] <- (1-exp(-Hazk[i])
+	# }
+	# ESA <- sum(pDetect[1:nmask]))*A
+	# logESA <- log(ESA)
 	
     for(k in 1:K0) {
         X[k, 1] ~ dnorm(0,1)
@@ -34,6 +40,7 @@ SCR_model <- nimbleCode({
 	}
 })
 
+## Simulate some data
 simSCR <- function(N = 50, sigma = 0.5, lambda = 0.5, StudyPeriod = 25, traps, xlim, ylim)
 {
     locs <- cbind(x = runif(N, xlim[1], xlim[2]), 
@@ -51,7 +58,7 @@ simSCR <- function(N = 50, sigma = 0.5, lambda = 0.5, StudyPeriod = 25, traps, x
 	as.matrix(capthist)
 }
 
-## Start with an easy problem.
+## Start with an easy problem. Lots of detections.
 traps <- expand.grid(x = 1:5,y = 1:5)
 N <- 50
 sigma <- 1.5
@@ -68,12 +75,22 @@ d2mask <- as.matrix(t(apply(mask, 1, FUN = function(x){(x[1]-traps[,1])^2 + (x[2
 
 y  <- simSCR(N, sigma, lambda, StudyPeriod, traps, xlim, ylim)
 
+## Change setup to compile get LogESA independently. This is the same function with setup and 
+## derivsRun to check it's working.
+# Rget <- getLogESATest()
+# Rget$run(0.5, 0.2, d2mask, nmask, J, StudyPeriod, A)
+# Rget$derivsRun(0.5, 0.2, d2mask, nmask, J, StudyPeriod, A)
+# cgetESA <- compileNimble(Rget)
+# cgetESA$run(0.5, 0.2, d2mask, nrow(d2mask), ncol(d2mask), StudyPeriod, A)
+# cgetESA$derivsRun(0.5, 0.2, d2mask, nrow(d2mask), ncol(d2mask), StudyPeriod, A)
+
 K <- nrow(y)
 data <- list(y = y, zeros = rep(0, K))	#, K I added it as data instead of the prior and that allows me to change it but not influence the Log Likelihood.
 constants <- list(traps = traps, d2mask = d2mask, J = nrow(traps), nmask = nrow(mask), 
 	A = A, area = area, K0 = nrow(y), Time = StudyPeriod)
 inits <- list(D = 50, sigma = 0.5, lambda = 1)	
 Rmodel <- nimbleModel(SCR_model, data=data, constants=constants, inits = inits, buildDerivs = TRUE)
+## ** Won't compile here.
 Cmodel <- compileNimble(Rmodel)
 scr_laplace <-  buildLaplace(Rmodel, paramNodes = c('sigma', 'lambda'), randomEffectsNodes = 'X')
 Cscr_laplace <- compileNimble(scr_laplace, project = Rmodel)
