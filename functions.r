@@ -19,6 +19,26 @@ getESA <- nimbleFunction(
 	buildDerivs = list(run = list(ignore = c('nmask', 'ntrap', 'Time', 'area', 'i', 'j')))
 )
 
+getESABernoulli <- nimbleFunction(
+    run = function(sigma = double(), g0 = double(), d2mask = double(2), 
+		nmask = integer(), ntrap = integer(), area = double()) { # type declarations
+		ESA <- 0.0
+		sigma2 <- sigma*sigma*2
+		for( i in 1:nmask ){
+		  pAvoid <- 1.0
+		  for( j in 1:ntrap) {
+			  d2mask_noAD <- ADbreak(d2mask[i, j])
+			  pAvoid <- pAvoid * (1-g0*exp(-d2mask_noAD/sigma2))
+			}
+			ESA <- ESA + (1-pAvoid)*area
+		}
+        return(ESA)
+        returnType(double())  # return type declaration
+    },  
+	buildDerivs = list(run = list(ignore = c('nmask', 'ntrap', 'area', 'i', 'j')))
+)
+
+
 ## Testing this one. Same as getLogESA but has setup code and derivsRun so 
 ## that we can check that it compiles locally.
 getLogESATest <- nimbleFunction(
