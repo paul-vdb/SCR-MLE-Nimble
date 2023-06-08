@@ -1,0 +1,6 @@
+https://r-nimble.org/ADuserManual_draft/chapter_AD.html
+
+https://r-nimble.org/html_manual/cha-AD.html
+
+https://r-nimble.org/html_manual/example-maximum-likelihood-estimation-using-optim-with-gradients-from-nimderivs..html
+

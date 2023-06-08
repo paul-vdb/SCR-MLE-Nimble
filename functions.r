@@ -1,6 +1,6 @@
 
 ## This function compiles using compileNimble directly, but not in the model compile...
-getLogESA <- nimbleFunction(
+getESA <- nimbleFunction(
     run = function(sigma = double(), lambda = double(), d2mask = double(2), 
 		nmask = integer(), ntrap = integer(), Time = double(), area = double()) { # type declarations
 		ESA <- 0.0
@@ -8,15 +8,15 @@ getLogESA <- nimbleFunction(
 		for( i in 1:nmask ){
 		  Hk <- 0.0
 		  for( j in 1:ntrap) {
-			Hk <- Hk + lambda*Time*exp(-d2mask[i, j]/sigma2)
-		  }
-		  ESA <- ESA + (1-exp(-Hk))*area
+			  d2mask_noAD <- ADbreak(d2mask[i, j])
+			  Hk <- Hk + lambda*Time*exp(-d2mask_noAD/sigma2)
+			}
+			ESA <- ESA + (1-exp(-Hk))*area
 		}
-		lESA <- log(ESA)
-        return(lESA)
+        return(ESA)
         returnType(double())  # return type declaration
     },  
-	buildDerivs = list(run = list(ignore = c('d2mask', 'nmask', 'ntrap', 'Time', 'area', 'i', 'j')))
+	buildDerivs = list(run = list(ignore = c('nmask', 'ntrap', 'Time', 'area', 'i', 'j')))
 )
 
 ## Testing this one. Same as getLogESA but has setup code and derivsRun so 
@@ -59,15 +59,16 @@ dCount_cond <- nimbleFunction(
 		for( i in 1:nmask ){
 		  Hk <- 0.0
 		  for( j in 1:ntrap) {
-			Hk <- Hk + lambda*Time*exp(-d2mask[i,j]/sigma2)
-		  }
-		  ESA <- ESA + (1-exp(-Hk))*area
-		} 
+			  d2mask_noAD <- ADbreak(d2mask[i, j])
+			  Hk <- Hk + lambda*Time*exp(-d2mask_noAD/sigma2)
+			}
+			ESA <- ESA + (1-exp(-Hk))*area
+		}
 		
         ll <- -D*ESA + x*log(D)
         returnType(double(0))
 		if(log) return(ll) else return(exp(ll))
 		},
-	buildDerivs = list(run = list(ignore = c('d2mask', 'nmask', 'ntrap', 'Time', 'area', 'i', 'j')))
+	buildDerivs = list(run = list(ignore = c('nmask', 'ntrap', 'Time', 'area', 'i', 'j')))
 )
 

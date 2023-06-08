@@ -1,4 +1,3 @@
-# remotes::install_github("nimble-dev/nimble", ref = "ADoak", subdir = "packages/nimble")
 library(nimble)
 nimbleOptions(buildModelDerivs = TRUE)
 
@@ -13,16 +12,16 @@ SCR_model <- nimbleCode({
 	D <- K0/exp(logESA)
 
 	## Doesn't Work
-	logESA <- getLogESA(sigma = sigma, lambda = lambda, d2mask = d2mask[1:nmask, 1:J], nmask = nmask, 
+	ESA <- getESA(sigma = sigma, lambda = lambda, d2mask = d2mask[1:nmask, 1:J], nmask = nmask, 
 		ntrap = J, Time = Time, area = A)
 	
 	## Does work but kind of sloppy feeling.
 	# for( i in 1:nmask ) {
 		# Hazk[i] <-  sum(lambda*Time*exp(-d2mask[i,1:J]*tau2))
-		# pDetect[i] <- (1-exp(-Hazk[i])
+		# pDetect[i] <- (1-exp(-Hazk[i]))
 	# }
-	# ESA <- sum(pDetect[1:nmask]))*A
-	# logESA <- log(ESA)
+	# ESA <- sum(pDetect[1:nmask])*A
+	logESA <- log(ESA)
 	
     for(k in 1:K0) {
         X[k, 1] ~ dnorm(0,1)
